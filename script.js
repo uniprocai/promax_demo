@@ -6,6 +6,18 @@ const state = {
   approved: false
 };
 
+const URGENCY_SCORE_MAP = {
+  Standard: 1,
+  High: 2,
+  Critical: 3
+};
+
+const MARGIN_BASELINE = 39;
+const MARGIN_SCORE_BASE = 80;
+const MARGIN_SCORE_DIVISOR = 10;
+
+let documentRefCounter = 0;
+
 const steps = Array.from(document.querySelectorAll('.workflow-step'));
 const stepMarkers = Array.from(document.querySelectorAll('.step-marker'));
 
@@ -68,7 +80,7 @@ function parseForm() {
   const merchandise = document.getElementById('merchandiseType').value;
   const restrictions = document.getElementById('specialRestrictions').value;
 
-  const urgencyScore = urgency === 'Critical' ? 3 : urgency === 'High' ? 2 : 1;
+  const urgencyScore = URGENCY_SCORE_MAP[urgency] || URGENCY_SCORE_MAP.Standard;
   const riskSeed = volume > 45 ? 2 : 1;
   const riskMod = /temperature|secure|customs/i.test(restrictions) ? 1 : 0;
   const riskLevel = Math.min(3, urgencyScore + riskSeed + riskMod - 1);
@@ -100,7 +112,14 @@ function renderProfile(profile) {
     `${profile.risk} risk`
   ];
 
-  dynamicTags.innerHTML = tags.map((tag) => `<span class="tag">${tag}</span>`).join('');
+  dynamicTags.replaceChildren(
+    ...tags.map((tag) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag';
+      chip.textContent = tag;
+      return chip;
+    })
+  );
 }
 
 function buildRoutes(profile) {
@@ -180,7 +199,7 @@ function renderCostPanel() {
     return;
   }
 
-  let margin = 39 + (state.selectedRoute.score - 80) / 10;
+  let margin = MARGIN_BASELINE + (state.selectedRoute.score - MARGIN_SCORE_BASE) / MARGIN_SCORE_DIVISOR;
   const volumeFactor = state.profile.volume / 20;
 
   const draw = () => {
@@ -220,7 +239,8 @@ function renderDocuments() {
     return;
   }
 
-  const reference = `DL-${Date.now().toString().slice(-6)}`;
+  documentRefCounter += 1;
+  const reference = `DL-${Date.now().toString(36).slice(-5).toUpperCase()}-${documentRefCounter}`;
   documentsPanel.innerHTML = [
     { name: 'Digital Delivery Note', status: 'Validated', trace: reference },
     { name: 'Pre-Invoice', status: 'Ready for Dispatch', trace: `${reference}-INV` },
