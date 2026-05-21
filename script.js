@@ -15,6 +15,10 @@ const URGENCY_SCORE_MAP = {
 const MARGIN_BASELINE = 39;
 const MARGIN_SCORE_BASE = 80;
 const MARGIN_SCORE_DIVISOR = 10;
+const MARGIN_MIN = 33;
+const MARGIN_MAX = 48;
+const MARGIN_VOLATILITY = 1.2;
+const CUSTOMER_REFERENCE = 'DLink Industrial Network';
 
 let documentRefCounter = 0;
 
@@ -206,7 +210,7 @@ function renderCostPanel() {
     const fuel = (1.2 + volumeFactor * 0.6 + Math.random() * 0.35).toFixed(2);
     const toll = (150 + volumeFactor * 55 + Math.random() * 40).toFixed(0);
     const costKm = (2.1 + volumeFactor * 0.33 + Math.random() * 0.2).toFixed(2);
-    margin = Math.max(33, Math.min(48, margin + (Math.random() - 0.5) * 1.2));
+    margin = Math.max(MARGIN_MIN, Math.min(MARGIN_MAX, margin + (Math.random() - 0.5) * MARGIN_VOLATILITY));
     const profit = (margin * 1.42).toFixed(1);
 
     const marginStatus = margin >= 42 ? 'On target' : 'Below target';
@@ -240,7 +244,15 @@ function renderDocuments() {
   }
 
   documentRefCounter += 1;
-  const reference = `DL-${Date.now().toString(36).slice(-5).toUpperCase()}-${documentRefCounter}`;
+  const shipmentSeed = [
+    state.profile.merchandise.slice(0, 3),
+    state.profile.region.slice(0, 3),
+    state.selectedRoute.id
+  ]
+    .join('')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toUpperCase();
+  const reference = `DL-${shipmentSeed}-${String(documentRefCounter).padStart(3, '0')}`;
   documentsPanel.innerHTML = [
     { name: 'Digital Delivery Note', status: 'Validated', trace: reference },
     { name: 'Pre-Invoice', status: 'Ready for Dispatch', trace: `${reference}-INV` },
@@ -250,7 +262,7 @@ function renderDocuments() {
       (doc) => `
       <article class="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
         <p class="text-xs uppercase tracking-[0.14em] text-slate-400">${doc.name}</p>
-        <p class="text-sm mt-2">Customer reference: DLink Industrial Network</p>
+        <p class="text-sm mt-2">Customer reference: ${CUSTOMER_REFERENCE}</p>
         <p class="text-sm">Shipment traceability: ${doc.trace}</p>
         <span class="status-badge mt-3 inline-block">${doc.status}</span>
       </article>
